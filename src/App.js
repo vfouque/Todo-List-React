@@ -1,14 +1,46 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TodoList from './components/TodoList';
 import AddTodo from './components/AddTodo';
 import ThemeContext from './context/ThemeContext'
 
 function App() {
   const [todoList, setTodoList] = useState([]);
-  const [theme, setTheme] = useState('primary')
+  const [theme, setTheme] = useState('primary');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let ignore = false;
+    async function fetchTodoList() {
+      try {
+        const response = await fetch('https://restapi.fr/api/todo');
+        if (response.ok) {
+          const todos = await response.json();
+          if (!ignore) {
+            if (Array.isArray(todos)) {
+              setTodoList(todos);
+            } else {
+              setTodoList([todos])
+            }
+          }
+        } else {
+          console.log('erreur')
+        }
+      } catch (e) {
+        console.log('erreur')
+      } finally {
+        if(!ignore){
+          setLoading(false)
+        }
+      }
+    }
+    fetchTodoList();
+    return () => {
+      ignore = true;
+    }
+  }, [])
 
   //on cré la fonction qui va etre transmise en prop à l'enfant AddTodo//
-  function addTodo(todo) {   
+  function addTodo(todo) {
     setTodoList([...todoList, todo])
   }
 
@@ -46,7 +78,7 @@ function App() {
         )
       )
     )
-  }  
+  }
 
   function handleChange(e) {
     setTheme(e.target.value)
@@ -64,14 +96,16 @@ function App() {
             </select>
           </h1>
           <AddTodo addTodo={addTodo} />
-          <TodoList
-            todoList={todoList}
-            deleteTodo={deleteTodo}
-            toggleTodo={toggleTodo}
-            toggleTodoEdit={toggleTodoEdit}
-            editTodo={editTodo}
-            selectedTodo={selectedTodo}
-          />
+          {loading ? (<p>En cours de chargement...</p>) :
+            <TodoList
+              todoList={todoList}
+              deleteTodo={deleteTodo}
+              toggleTodo={toggleTodo}
+              toggleTodoEdit={toggleTodoEdit}
+              editTodo={editTodo}
+              selectedTodo={selectedTodo}
+            />
+          }
         </div>
       </div>
     </ThemeContext.Provider>
